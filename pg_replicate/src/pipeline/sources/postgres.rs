@@ -44,6 +44,8 @@ pub enum PostgresSourceError {
     MissingSlotName,
 }
 
+impl SourceError for PostgresSourceError {}
+
 pub struct PostgresSource {
     replication_client: ReplicationClient,
     table_schemas: HashMap<TableId, TableSchema>,
@@ -104,6 +106,8 @@ impl PostgresSource {
 
 #[async_trait]
 impl Source for PostgresSource {
+    type Error = PostgresSourceError;
+
     fn get_table_schemas(&self) -> &HashMap<TableId, TableSchema> {
         &self.table_schemas
     }
@@ -112,7 +116,7 @@ impl Source for PostgresSource {
         &self,
         table_name: &TableName,
         column_schemas: &[ColumnSchema],
-    ) -> Result<TableCopyStream, SourceError> {
+    ) -> Result<TableCopyStream, Self::Error> {
         info!("starting table copy stream for table {table_name}");
         let column_types: Vec<Type> = column_schemas.iter().map(|c| c.typ.clone()).collect();
 
@@ -128,7 +132,7 @@ impl Source for PostgresSource {
         })
     }
 
-    async fn commit_transaction(&self) -> Result<(), SourceError> {
+    async fn commit_transaction(&self) -> Result<(), Self::Error> {
         self.replication_client
             .commit_txn()
             .await
@@ -136,7 +140,7 @@ impl Source for PostgresSource {
         Ok(())
     }
 
-    async fn get_cdc_stream(&self, start_lsn: PgLsn) -> Result<CdcStream, SourceError> {
+    async fn get_cdc_stream(&self, start_lsn: PgLsn) -> Result<CdcStream, Self::Error> {
         info!("starting cdc stream at lsn {start_lsn}");
         let publication = self
             .publication()

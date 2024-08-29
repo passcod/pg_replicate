@@ -36,6 +36,8 @@ pub enum BigQuerySinkError {
     CommitWithoutBegin,
 }
 
+impl SinkError for BigQuerySinkError {}
+
 pub struct BigQueryBatchSink {
     client: BigQueryClient,
     dataset_id: String,
@@ -83,7 +85,8 @@ impl BigQueryBatchSink {
 
 #[async_trait]
 impl BatchSink for BigQueryBatchSink {
-    async fn get_resumption_state(&mut self) -> Result<PipelineResumptionState, SinkError> {
+    type Error = BigQuerySinkError;
+    async fn get_resumption_state(&mut self) -> Result<PipelineResumptionState, Self::Error> {
         info!("getting resumption state from bigquery");
         let copied_table_column_schemas = [ColumnSchema {
             name: "table_id".to_string(),
@@ -139,7 +142,7 @@ impl BatchSink for BigQueryBatchSink {
     async fn write_table_schemas(
         &mut self,
         table_schemas: HashMap<TableId, TableSchema>,
-    ) -> Result<(), SinkError> {
+    ) -> Result<(), Self::Error> {
         for table_schema in table_schemas.values() {
             self.client
                 .create_table_if_missing(
@@ -159,7 +162,7 @@ impl BatchSink for BigQueryBatchSink {
         &mut self,
         mut table_rows: Vec<TableRow>,
         table_id: TableId,
-    ) -> Result<(), SinkError> {
+    ) -> Result<(), Self::Error> {
         let table_schema = self.get_table_schema(table_id)?;
         //TODO: remove this clone
         let table_name = &table_schema.table_name.name.clone();
@@ -176,7 +179,7 @@ impl BatchSink for BigQueryBatchSink {
         Ok(())
     }
 
-    async fn write_cdc_events(&mut self, events: Vec<CdcEvent>) -> Result<PgLsn, SinkError> {
+    async fn write_cdc_events(&mut self, events: Vec<CdcEvent>) -> Result<PgLsn, Self::Error> {
         let mut table_name_to_table_rows = HashMap::new();
         let mut new_last_lsn = PgLsn::from(0);
         let mut final_lsn: Option<PgLsn> = None;
@@ -241,14 +244,14 @@ impl BatchSink for BigQueryBatchSink {
         Ok(committed_lsn)
     }
 
-    async fn table_copied(&mut self, table_id: TableId) -> Result<(), SinkError> {
+    async fn table_copied(&mut self, table_id: TableId) -> Result<(), Self::Error> {
         self.client
             .insert_into_copied_tables(&self.dataset_id, table_id)
             .await?;
         Ok(())
     }
 
-    async fn truncate_table(&mut self, _table_id: TableId) -> Result<(), SinkError> {
+    async fn truncate_table(&mut self, _table_id: TableId) -> Result<(), Self::Error> {
         Ok(())
     }
 }
