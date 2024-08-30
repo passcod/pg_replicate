@@ -12,15 +12,17 @@ pub mod data_pipeline;
 pub mod sinks;
 pub mod sources;
 
+#[derive(Debug, Clone)]
 pub enum PipelineAction {
     TableCopiesOnly,
     CdcOnly,
     Both,
 }
 
+#[derive(Debug, Clone)]
 pub struct PipelineResumptionState {
-    copied_tables: HashSet<TableId>,
-    last_lsn: PgLsn,
+    pub copied_tables: HashSet<TableId>,
+    pub last_lsn: PgLsn,
 }
 
 #[derive(Debug, Error)]
