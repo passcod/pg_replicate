@@ -11,13 +11,14 @@ pub mod batching;
 pub mod sinks;
 pub mod sources;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PipelineAction {
     TableCopiesOnly,
     CdcOnly,
     Both,
 }
 
+#[derive(Debug, Clone)]
 pub struct PipelineResumptionState {
     pub copied_tables: HashSet<TableId>,
     pub last_lsn: PgLsn,
