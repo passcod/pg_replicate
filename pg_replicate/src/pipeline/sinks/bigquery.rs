@@ -12,7 +12,7 @@ use crate::{
         cdc_event::CdcEvent,
         table_row::{Cell, TableRow},
     },
-    pipeline::PipelineResumptionState,
+    pipeline::{sources::postgres::TableCopyStreamError, PipelineResumptionState},
     table::{ColumnSchema, TableId, TableSchema},
 };
 
@@ -160,20 +160,24 @@ impl BatchSink for BigQueryBatchSink {
 
     async fn write_table_rows(
         &mut self,
-        mut table_rows: Vec<TableRow>,
+        mut table_rows: Vec<Result<TableRow, TableCopyStreamError>>,
         table_id: TableId,
     ) -> Result<(), Self::Error> {
         let table_schema = self.get_table_schema(table_id)?;
-        //TODO: remove this clone
         let table_name = &table_schema.table_name.name.clone();
         let table_descriptor = table_schema.into();
 
-        for table_row in &mut table_rows {
-            table_row.values.push(Cell::String("UPSERT".to_string()));
-        }
+        let new_rows = table_rows
+            .drain(..)
+            .filter_map(|row| row.ok())
+            .map(|mut row| {
+                row.values.push(Cell::String("UPSERT".to_string()));
+                row
+            })
+            .collect::<Vec<TableRow>>();
 
         self.client
-            .stream_rows(&self.dataset_id, table_name, &table_descriptor, &table_rows)
+            .stream_rows(&self.dataset_id, table_name, &table_descriptor, &new_rows)
             .await?;
 
         Ok(())
