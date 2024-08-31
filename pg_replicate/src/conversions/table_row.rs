@@ -16,7 +16,7 @@ pub enum Cell {
     I16(i16),
     I32(i32),
     I64(i64),
-    TimeStamp(String),
+    TimeStamp(NaiveDateTime),
     Bytes(Vec<u8>),
 }
 
@@ -171,8 +171,7 @@ impl TableRowConverter {
                 let val = if column_schema.nullable {
                     match row.try_get::<NaiveDateTime>(i) {
                         Ok(s) => {
-                            let s = s.format("%Y-%m-%d %H:%M:%S%.f").to_string();
-                            Cell::TimeStamp(s.to_string())
+                            Cell::TimeStamp(s)
                         }
                         Err(_) => {
                             //TODO: Only return null if the error is WasNull from tokio_postgres crate
@@ -181,7 +180,6 @@ impl TableRowConverter {
                     }
                 } else {
                     let val = row.get::<NaiveDateTime>(i);
-                    let val = val.format("%Y-%m-%d %H:%M:%S%.f").to_string();
                     Cell::TimeStamp(val)
                 };
                 Ok(val)

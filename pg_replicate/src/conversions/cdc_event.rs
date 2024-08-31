@@ -106,7 +106,6 @@ impl CdcEventConverter {
             Type::TIMESTAMP => {
                 let val = from_utf8(bytes)?;
                 let val = NaiveDateTime::parse_from_str(val, "%Y-%m-%d %H:%M:%S%.f")?;
-                let val = val.format("%Y-%m-%d %H:%M:%S%.f").to_string();
                 Ok(Cell::TimeStamp(val))
             }
             ref typ => Err(CdcEventConversionError::UnsupportedType(typ.to_string())),

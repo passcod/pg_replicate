@@ -535,8 +535,7 @@ impl Message for TableRow {
                     }
                 }
                 Cell::TimeStamp(t) => {
-                    if !t.is_empty() {
-                        ::prost::encoding::string::encode(tag, t, buf);
+                    ::prost::encoding::string::encode(tag, &t.to_string(), buf);
                     }
                 }
                 Cell::Bytes(b) => {
