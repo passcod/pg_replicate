@@ -41,6 +41,9 @@ pub enum CdcEventConversionError {
 
     #[error("invalid timestamp value")]
     InvalidTimestamp(#[from] chrono::ParseError),
+    
+    #[error("invalid json value")]
+    InvalidJson(#[from] serde_json::Error),
 
     #[error("unsupported type")]
     UnsupportedType(String),
@@ -87,6 +90,10 @@ impl CdcEventConverter {
             Type::CHAR | Type::BPCHAR | Type::VARCHAR | Type::NAME | Type::TEXT => {
                 let val = from_utf8(bytes)?;
                 Ok(Cell::String(val.to_string()))
+            }
+            Type::JSON | Type::JSONB => {
+                let val = from_utf8(bytes)?;
+                Ok(Cell::Json(serde_json::from_str(val)?))
             }
             Type::INT2 => {
                 let val = from_utf8(bytes)?;

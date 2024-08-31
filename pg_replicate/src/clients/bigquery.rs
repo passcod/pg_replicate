@@ -340,6 +340,7 @@ impl BigQueryClient {
             Cell::Null => s.push_str("null"),
             Cell::Bool(b) => s.push_str(&format!("{b}")),
             Cell::String(str) => s.push_str(&format!("'{str}'")),
+            Cell::Json(val) => s.push_str(&format!("'{}'", serde_json::to_string(val).unwrap())),
             Cell::I16(i) => s.push_str(&format!("{i}")),
             Cell::I32(i) => s.push_str(&format!("{i}")),
             Cell::I64(i) => s.push_str(&format!("{i}")),
@@ -519,6 +520,11 @@ impl Message for TableRow {
                         ::prost::encoding::string::encode(tag, s, buf);
                     }
                 }
+                Cell::Json(s) => {
+                    if !s.is_null() {
+                        ::prost::encoding::string::encode(tag, &serde_json::to_string(s).unwrap(), buf);
+                    }
+                }
                 Cell::I16(i) => {
                     let val = *i as i32;
                     if val != 0 {
@@ -537,7 +543,7 @@ impl Message for TableRow {
                 }
                 Cell::TimeStamp(t) => {
                     ::prost::encoding::string::encode(tag, &t.to_string(), buf);
-                    }
+                }
                 Cell::TimeStampTz(t) => {
                     ::prost::encoding::string::encode(tag, &t.to_string(), buf);
                 }
@@ -584,6 +590,13 @@ impl Message for TableRow {
                         0
                     }
                 }
+                Cell::Json(s) => {
+                    if !s.is_null() {
+                        ::prost::encoding::string::encoded_len(tag, &serde_json::to_string(s).unwrap())
+                    } else {
+                        0
+                    }
+                }
                 Cell::I16(i) => {
                     let val = *i as i32;
                     if val != 0 {
@@ -608,7 +621,7 @@ impl Message for TableRow {
                 }
                 Cell::TimeStamp(t) => {
                         ::prost::encoding::string::encoded_len(tag, &t.to_string())
-                    }
+                }
                 Cell::TimeStampTz(t) => {
                         ::prost::encoding::string::encoded_len(tag, &t.to_string())
                 }

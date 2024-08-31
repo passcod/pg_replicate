@@ -9,6 +9,7 @@ use tokio_postgres::{
 use crate::{pipeline::batching::BatchBoundary, table::ColumnSchema};
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Cell {
     Null,
     Bool(bool),
@@ -19,6 +20,7 @@ pub enum Cell {
     TimeStamp(NaiveDateTime),
     TimeStampTz(DateTime<FixedOffset>),
     Bytes(Vec<u8>),
+    Json(serde_json::Value),
 }
 
 #[derive(Debug)]
@@ -118,11 +120,19 @@ impl TableRowConverter {
                 };
                 Ok(val)
             }
-            // Type::JSON | Type::JSONB => {
-            //     let val = row.get::<serde_json::Value>(i);
-            //     let val = json_to_cbor_value(&val);
-            //     Ok(val)
-            // }
+            Type::JSON | Type::JSONB => {
+                let val = if column_schema.nullable {
+                    match row.try_get::<serde_json::Value>(i) {
+                        Ok(s) => Cell::String(s.to_string()),
+                        //TODO: Only return null if the error is WasNull from tokio_postgres crate
+                        Err(_) => Cell::Null,
+                    }
+                } else {
+                    let val = row.get::<serde_json::Value>(i);
+                    Cell::Json(val)
+                };
+                Ok(val)
+            }
             Type::INT2 => {
                 let val = if column_schema.nullable {
                     match row.try_get::<i16>(i) {
