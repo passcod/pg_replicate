@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, FixedOffset, NaiveDateTime, Utc};
 use postgres_protocol::types;
 use thiserror::Error;
 use tokio_postgres::{
@@ -17,6 +17,7 @@ pub enum Cell {
     I32(i32),
     I64(i64),
     TimeStamp(NaiveDateTime),
+    TimeStampTz(DateTime<FixedOffset>),
     Bytes(Vec<u8>),
 }
 
@@ -181,6 +182,23 @@ impl TableRowConverter {
                 } else {
                     let val = row.get::<NaiveDateTime>(i);
                     Cell::TimeStamp(val)
+                };
+                Ok(val)
+            }
+            Type::TIMESTAMPTZ => {
+                let val = if column_schema.nullable {
+                    match row.try_get::<DateTime<FixedOffset>>(i) {
+                        Ok(s) => {
+                            Cell::TimeStampTz(s)
+                        }
+                        Err(_) => {
+                            //TODO: Only return null if the error is WasNull from tokio_postgres crate
+                            Cell::Null
+                        }
+                    }
+                } else {
+                    let val = row.get::<DateTime<FixedOffset>>(i);
+                    Cell::TimeStampTz(val)
                 };
                 Ok(val)
             }

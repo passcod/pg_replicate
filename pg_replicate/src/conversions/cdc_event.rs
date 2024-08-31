@@ -4,7 +4,7 @@ use std::{
     str::{from_utf8, ParseBoolError, Utf8Error},
 };
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime};
 use postgres_protocol::message::backend::{
     BeginBody, CommitBody, DeleteBody, InsertBody, LogicalReplicationMessage, RelationBody,
     ReplicationMessage, TupleData, UpdateBody,
@@ -107,6 +107,11 @@ impl CdcEventConverter {
                 let val = from_utf8(bytes)?;
                 let val = NaiveDateTime::parse_from_str(val, "%Y-%m-%d %H:%M:%S%.f")?;
                 Ok(Cell::TimeStamp(val))
+            }
+            Type::TIMESTAMPTZ => {
+                let val = from_utf8(bytes)?;
+                let val = DateTime::parse_from_str(val, "%Y-%m-%d %H:%M:%S%.f%#z")?;
+                Ok(Cell::TimeStampTz(val))
             }
             ref typ => Err(CdcEventConversionError::UnsupportedType(typ.to_string())),
         }

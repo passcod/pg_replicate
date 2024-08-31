@@ -344,6 +344,7 @@ impl BigQueryClient {
             Cell::I32(i) => s.push_str(&format!("{i}")),
             Cell::I64(i) => s.push_str(&format!("{i}")),
             Cell::TimeStamp(t) => s.push_str(&format!("'{t}'")),
+            Cell::TimeStampTz(t) => s.push_str(&format!("'{t}'")),
             Cell::Bytes(b) => {
                 let bytes: String = b.iter().map(|b| *b as char).collect();
                 s.push_str(&format!("b'{bytes}'"))
@@ -537,6 +538,8 @@ impl Message for TableRow {
                 Cell::TimeStamp(t) => {
                     ::prost::encoding::string::encode(tag, &t.to_string(), buf);
                     }
+                Cell::TimeStampTz(t) => {
+                    ::prost::encoding::string::encode(tag, &t.to_string(), buf);
                 }
                 Cell::Bytes(b) => {
                     if !b.is_empty() {
@@ -604,11 +607,10 @@ impl Message for TableRow {
                     }
                 }
                 Cell::TimeStamp(t) => {
-                    if !t.is_empty() {
-                        ::prost::encoding::string::encoded_len(tag, t)
-                    } else {
-                        0
+                        ::prost::encoding::string::encoded_len(tag, &t.to_string())
                     }
+                Cell::TimeStampTz(t) => {
+                        ::prost::encoding::string::encoded_len(tag, &t.to_string())
                 }
                 Cell::Bytes(b) => {
                     if !b.is_empty() {
@@ -632,8 +634,8 @@ impl Message for TableRow {
                 Cell::I16(i) => *i = 0,
                 Cell::I32(i) => *i = 0,
                 Cell::I64(i) => *i = 0,
-                Cell::TimeStamp(t) => t.clear(),
                 Cell::Bytes(b) => b.clear(),
+                _ => {}
             }
         }
     }
