@@ -30,7 +30,6 @@ gcp-bigquery-client = { workspace = true, optional = true, features = [
 pin-project-lite = { workspace = true }
 postgres-protocol = { workspace = true }
 prost = { workspace = true, optional = true }
-rustls = { workspace = true, features = ["aws-lc-rs", "logging"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["std"] }
 thiserror = { workspace = true }
@@ -43,6 +42,7 @@ clap = { workspace = true, default-features = true, features = [
     "std",
     "derive",
 ] }
+rustls = { workspace = true, features = ["aws-lc-rs", "logging"] }
 tracing-subscriber = { workspace = true, default-features = true, features = [
     "env-filter",
 ] }
