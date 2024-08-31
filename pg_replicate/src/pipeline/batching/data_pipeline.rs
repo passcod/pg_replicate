@@ -131,7 +131,13 @@ impl<Src: Source, Snk: BatchSink> BatchDataPipeline<Src, Snk> {
             let mut send_status_update = false;
             let mut events = Vec::with_capacity(batch.len());
             for event in batch {
-                let event = event.map_err(CommonSourceError::CdcStream)?;
+                let event = match event {
+                    Ok(event) => event,
+                    Err(err) => {
+                        warn!(?err, "Error reading CDC event");
+                        continue;
+                    }
+                };
                 if let CdcEvent::KeepAliveRequested { reply } = event {
                     send_status_update = reply;
                 };
